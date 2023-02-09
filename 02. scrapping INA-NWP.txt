@@ -1,0 +1,171 @@
+##############################################################################################
+##                                WEB SCRAPPING NWP                                        ## 
+##############################################################################################
+
+#!/bin/bash
+#Place loop
+LOC=(SMP1 SMP2 SMJ SMK SMB);
+LAT=(-7.22360 -7.20530 -7.38460 -7.03976 -8.21500);
+LON=(112.72390 112.73530 112.78330 113.91400 114.35530);
+cc=12
+x=0;
+wdir=/home/wrfadmin/apps/gds-2.0/example/MOS
+outdir=$wdir/output
+#datadir=http://182.16.248.173:8080/dods/INA-NWP
+datadir=/home/wrfadmin/install-wrf/OUTPUT
+suffix="-d02-asim"
+while [ $x -le 4 ];
+do
+#Date loop
+sdate=20210227
+#edate=20210229
+edate=20220322
+date=$sdate
+while [ $date -le $edate ]
+do
+yyyy=`echo $date |cut -c1-4`
+mm=`echo $date |cut -c5-6`
+dd=`echo $date |cut -c7-8`
+echo "Run $yyyy$mm$dd$cc Forecast Data"
+#grads script
+cat << EOF > $yyyy$mm$dd$cc.gs
+'reinit'
+*'sdfopen $datadir/$yyyy$mm$dd$cc/$yyyy$mm$dd$cc$suffix'
+'open $datadir/$yyyy$mm$dd$cc/$yyyy$mm$dd$cc$suffix'
+*trap if data kosong*************************************
+  jebakan=sublin(result,2)
+if (jebakan='Open Error:  Can''t open description file')
+  'quit'
+else
+  *********************************************************
+  'q file'
+hasil=sublin(result,5)
+maxt=subwrd(hasil,12)
+'set lat ${LAT[$x]}'
+lintang = subwrd(result,5) 
+'set lon ${LON[$x]}'
+bujur = subwrd(result,5)
+tulis = write('${LOC[$x]}'_'$yyyy$mm$dd$cc.txt','waktu,lokasi,con_prec(mm),mic_prec(mm),sha_prec(mm),suhu2m(degC),dew2m(degC),rh2m(%),wspeed(m/s),wdir(deg),lcloud(%),mcloud(%),hcloud(%),surpre(Pa),clmix(kg/kg),wamix(kg/kg),outlr(W/m2),pblh(m),lifcl(m),cape(j/kg),mdbz,t950(degC),rh950(%),ws950(m/s),wd950(deg),t800(degC),rh800(%),ws800(m/s),wd800(deg),t500(degC),rh500(%),ws500(m/s),wd500(deg)')
+j=1
+while (j <= 25)
+  'set t 'j
+waktu = subwrd(result,4)
+'set z 1'
+*convective prec
+'d rainc(t='j')-rainc(t='j-1')'
+conprec=subwrd(result,4)
+*microphysic prec
+'d rainnc(t='j')-rainnc(t='j-1')'
+micprec=subwrd(result,4)
+*shallow cumulus prec
+'d rainsh(t='j')-rainsh(t='j-1')'
+shaprec=subwrd(result,4)
+*surface temp
+'d t2-273.15'
+suhu2m=subwrd(result,4)
+*dew point 2m
+'d td2'
+dew2m=subwrd(result,4)
+*relative humidity 2m
+'d rh2'
+rh2m=subwrd(result,4)
+*windspeed 10m
+'d ws10'
+ws10m=subwrd(result,4)
+*wind dir 10m
+'d wd10'
+wd10m=subwrd(result,4)
+*low cloud
+'d clflo'
+lcloud=subwrd(result,4)
+*mid cloud
+'d clfmi'
+mcloud=subwrd(result,4)
+*hi cloud
+'d clfhi'
+hcloud=subwrd(result,4)
+*surface pressure
+'d psfc'
+surpre=subwrd(result,4)
+*cloud mixing ratio
+'d qcloud'
+cmix=subwrd(result,4)
+*water mixing ratio
+'d qvapor'
+wmix=subwrd(result,4)
+*outgoing longwave radiation
+'d olr'
+outlr=subwrd(result,4)
+*planetary boundary height
+'d pblh'
+pblhe=subwrd(result,4)
+*lifting condensation level
+'d lcl'
+lcle=subwrd(result,4)
+*convective available potential energy
+'d cape'
+capen=subwrd(result,4)
+*max reflectivity
+'d max_dbz'
+mdbz=subwrd(result,4)
+*pressure 950
+'set lev 950'
+*suhu
+'d tc'
+t950=subwrd(result,4)
+*kelembaban
+'d rh'
+rh950=subwrd(result,4)
+*kecepatan angin
+'d wspd'
+ws950=subwrd(result,4)
+*arah angin
+'d wdir'
+wd950=subwrd(result,4)
+*pressure 800
+'set lev 800'
+*suhu
+'d tc'
+t800=subwrd(result,4)
+*kelembaban
+'d rh'
+rh800=subwrd(result,4)
+*kecepatan angin
+'d wspd'
+ws800=subwrd(result,4)
+*arah angin
+'d wdir'
+wd800=subwrd(result,4)
+*pressure 500
+'set lev 500'
+*suhu
+'d tc'
+t500=subwrd(result,4)
+*kelembaban
+'d rh'
+rh500=subwrd(result,4)
+*kecepatan angin
+'d wspd'
+ws500=subwrd(result,4)
+*arah angin
+'d wdir'
+wd500=subwrd(result,4)
+tulis = write('${LOC[$x]}'_'$yyyy$mm$dd$cc.txt',waktu','${LOC[$x]}','conprec','micprec','shaprec','suhu2m','dew2m','rh2m','ws10m','wd10m','lcloud','mcloud','hcloud','surpre','cmix','wmix','outlr','pblhe','lcle','capen','mdbz','t950','rh950','ws950','wd950','t800','rh800','ws800','wd800','t500','rh500','ws500','wd500)
+j = j + 1
+endwhile
+'quit'
+endif
+EOF
+grads -blc $yyyy$mm$dd$cc.gs
+rm *.gs
+mv *_$yyyy$mm$dd$cc.txt $outdir
+datestring="$yyyy-$mm-$dd"
+#linux version
+date=`date -u +"%Y%m%d" -d "+24 hours $datestring"`
+#mac version
+#date=`date -ju -f '%Y-%m-%d' -v+1d "$datestring" +'%Y%m%d'`
+
+done
+let x=x+1;
+done
+

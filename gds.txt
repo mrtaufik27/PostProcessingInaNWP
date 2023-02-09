@@ -1,0 +1,24 @@
+calc_o6rdnzzszc
+
+case
+	when location = "SMB" then "Banyuwangi"
+    when location = "SMK" then "kalianget"
+    when location = "SMP1" then "Tanjung Perak"
+    when location = "SMP2" then "Perak"
+    when location = "SMJ" then "Juanda"
+    ELSE "NULL"
+END
+
+calc_jzi4751szc
+
+case
+	when model = "baseline" then "Obs"
+    when model = "logistics" then "Logistics Reg"
+    when model = "bagged tree" then "Bagged T"
+    when model = "conf tree" then "Conditional Inference T"
+    when model = "decision tree" then "Decision T"
+    when model = "linear" then "Linear Reg"
+    when model = "elastic" then "Elastic Net"
+    when model = "PLS" then "PLS"
+    ELSE "NULL"
+END 
